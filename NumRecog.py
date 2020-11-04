@@ -8,9 +8,10 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
-import sys 
+import sys
+
 # Importing data from datasets
-data = ds.load_digits()
+data = ds.load_digits() # 1797 images of 8x8 containing numbers written by hand 
 x,y = data.images, data.target
 x = x.reshape(1797,64) # Reshaping data since each image is a matrix
 x_train, x_test ,y_train, y_test = train_test_split(x,y)
