@@ -41,7 +41,7 @@ if sys.argv[1] == "mlp":
     input_size = 64
     hidden_size = 20
     num_classes = 10
-    num_epochs = 10
+    num_epochs = 20
     batch_size = 100
     learning_rate = 0.01
 
@@ -69,5 +69,6 @@ if sys.argv[1] == "mlp":
     for epoch in range(num_epochs):
         loss = train(model,criterion,optimizer,train_loader)
         print(epoch,loss)
-    
-    print(model(x_test_tensor))
+    _,pred = model(x_test_tensor[:30]).max(1)
+    print(pred)
+    print(y_test_tensor[:30])
