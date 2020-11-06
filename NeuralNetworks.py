@@ -5,37 +5,60 @@ import  sklearn.datasets as ds
 from sklearn.model_selection import train_test_split
 import sys 
 
-# Creating Class for Multilayer Perceptron (1 input layer, 1 hidden layer, 1 output layer)
+# Creating Class for Multilayer Perceptron with 3 layers
+# (1 input layer, 1 hidden layer, 1 output layer)
 class MultilayerPerceptron(nn.Module):
     def __init__(self,input_size,hidden_size,output_size):
-        super(MultilayerPerceptron,self).__init__() # Calling super class constructor
-        self.fc1 = nn.Linear(input_size,hidden_size) # Input Layer <-> Hidden Layer (Linear Trasnformation: input*weights)
-        self.relu = nn.ReLU() # Input Layer <-> Hidden Layer (Activation Function - give non linearity to the previous transformation)
-        self.fc2 = nn.Linear(hidden_size,output_size) # Hidden Layer <-> Output Layer (Linear Transformation)
+        super(MultilayerPerceptron,self).__init__()      # Calling super class constructor
+        self.fc1 = nn.Linear(input_size,hidden_size)     # Input Layer <-> Hidden Layer (Linear Trasnformation: input*weights)
+        self.relu = nn.ReLU()                            # Input Layer <-> Hidden Layer (Activation Function - give non linearity to the previous transformation)
+        self.fc2 = nn.Linear(hidden_size,output_size)    # Hidden Layer <-> Output Layer (Linear Transformation)
     def forward(self,x):
-        o = self.fc1(x) # eval first linear transformation to the input
+        o = self.fc1(x)  # eval first linear transformation to the input
         o = self.relu(o) # apply activation function to the previous result
-        o = self.fc2(o) # eval second linear transformation to the previous result
+        o = self.fc2(o)  # eval second linear transformation to the previous result
+        return o
+
+class ConvNN(nn.Module):
+    def __init__(self,):
+        super(ConvNN,self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(1,10,kernel_size=3,padding=2),
+            nn.BatchNorm2d(10),
+            nn.ReLU(),
+            nn.MaxPool2d((2))
+        )
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(10,20,kernel_size=3,padding=2),
+            nn.BatchNorm2d(20),
+            nn.ReLU(),
+        )
+        self.fc = nn.Linear(20,10)
+    def forward(self,x):
+        o = self.layer1(x)
+        o = self.layer2(x)
+        o = o.view(o.size(0),-1)
+        o = self.fc(o)
         return o
 
 def train(model,criterion,optimizer,train_loader): # training
     model.train() # Start training 
-    acc_loss = 0 # accumulate loss
+    acc_loss = 0  # accumulate loss
     for batch_idx,(images,labels) in enumerate(train_loader):
         optimizer.zero_grad() # initialize the gradient
-        o = model(images) # eval the model with the current input
+        o = model(images)     # eval the model with the current input
 
         loss = criterion(o,labels) # calculate the loss 
         acc_loss += loss # add the loss to the accumulate loss
 
-        loss.backward() # backpropagation
+        loss.backward()  # backpropagation
         optimizer.step() # update the parameters (weights, bias) of the model
 
     train_loss = acc_loss/len(train_loader) # calculate the average loss of these training step
     return train_loss
 
-data = ds.load_digits() # load numbers dataset 
-x,y = data.images, data.target 
+data = ds.load_digits()        # load numbers dataset 
+x,y = data.images, data.target # x.shape = (1797,8,8) , y.shape = (1797)
 
 if sys.argv[1] == "mlp":
     input_size = 64
@@ -49,22 +72,51 @@ if sys.argv[1] == "mlp":
     
     x_train, x_test, y_train, y_test = train_test_split(x,y)
 
-    x_train_tensor = torch.tensor(x_train).float()
-    y_train_tensor = torch.tensor(y_train).long()
+    x_train_tensor = torch.tensor(x_train).float() # converting x train data to tensor
+    y_train_tensor = torch.tensor(y_train).long()  # converting y train data to tensor
     
-    x_test_tensor = torch.tensor(x_test).float()
-    y_test_tensor = torch.tensor(y_test).long()
+    x_test_tensor = torch.tensor(x_test).float()   # converting x test data to tensor
+    y_test_tensor = torch.tensor(y_test).long()    # converting y test data to tensor
     
-    train_dataset = torch.utils.data.TensorDataset(x_train_tensor,y_train_tensor)
-    test_dataset = torch.utils.data.TensorDataset(x_test_tensor,y_test_tensor)
+    train_dataset = torch.utils.data.TensorDataset(x_train_tensor,y_train_tensor) # creating train dataset using x train and y train tensors
+    test_dataset = torch.utils.data.TensorDataset(x_test_tensor,y_test_tensor)    # creating test dataset using x test and y test tensors
 
-    train_loader = torch.utils.data.DataLoader(train_dataset)
-    test_loader = torch.utils.data.DataLoader(test_dataset)
+    train_loader = torch.utils.data.DataLoader(train_dataset,batch_size=batch_size) # creating train data loader using train dataset
+    test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=batch_size)   # create test data loader using test dataset
     
     model = MultilayerPerceptron(input_size,hidden_size,num_classes)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(),lr=learning_rate)
+
+    for epoch in range(num_epochs):
+        loss = train(model,criterion,optimizer,train_loader)
+        print(epoch,loss)
+    _,pred = model(x_test_tensor[:30]).max(1)
+    print(pred)
+    print(y_test_tensor[:30])
+
+elif sys.argv[1] == "cnn":
+    num_epochs = 20
+    batch_size = 100
+    learning_rate = 0.01
+    
+    x_train, x_test, y_train, y_test = train_test_split(x,y)
+
+    x_train_tensor = torch.tensor(x_train).float() # converting x train data to tensor
+    y_train_tensor = torch.tensor(y_train).long()  # converting y train data to tensor
+    
+    x_test_tensor = torch.tensor(x_test).float()   # converting x test data to tensor
+    y_test_tensor = torch.tensor(y_test).long()    # converting y test data to tensor
+    
+    train_dataset = torch.utils.data.TensorDataset(x_train_tensor,y_train_tensor) # creating train dataset using x train and y train tensors
+    test_dataset = torch.utils.data.TensorDataset(x_test_tensor,y_test_tensor)    # creating test dataset using x test and y test tensors
+
+    train_loader = torch.utils.data.DataLoader(train_dataset) # creating train data loader using train dataset
+    test_loader = torch.utils.data.DataLoader(test_dataset)   # create test data loader using test dataset
+    model = ConvNN()
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate)
 
     for epoch in range(num_epochs):
         loss = train(model,criterion,optimizer,train_loader)
