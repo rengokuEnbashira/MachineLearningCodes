@@ -91,8 +91,11 @@ if sys.argv[1] == "mlp":
     for epoch in range(num_epochs):
         loss = train(model,criterion,optimizer,train_loader)
         print(epoch,loss)
-    _,pred = model(x_test_tensor[:30]).max(1)
+    pred = model(x_test_tensor[:30])
+    sm = nn.Softmax(dim=1)
+    pred = sm(pred)
     print(pred)
+    print(pred.max(1))
     print(y_test_tensor[:30])
 
 elif sys.argv[1] == "cnn":
